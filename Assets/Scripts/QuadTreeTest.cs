@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System.Linq;
+using System.Collections;
 using System.Collections.Generic;
 using Diagnostics = System.Diagnostics;
 using UnityEngine;
@@ -138,6 +139,29 @@ public class QuadTreeTest : MonoBehaviour
             return reslutCount;
         }
     }
+    [ShowInInspector]
+    private int TotleCount
+    {
+        get
+        {
+            return objs.Count;
+        }
+    }
+    [ShowInInspector]
+    private string CheckPercent
+    {
+        get
+        {
+            var totleCount = TotleCount;
+            if (TotleCount != 0)
+            {
+                var percent = (float)ReslutCount / (float)totleCount;
+                percent = percent * 100;
+                return $"{percent:F1}%";
+            }
+            return "0%";
+        }
+    }
     private List<RectInfo> result;
     private void CheckQuery()
     {
@@ -150,6 +174,7 @@ public class QuadTreeTest : MonoBehaviour
             var result = root.Query(hero.bounds);
             if (result != null)
             {
+                result = result.Distinct().ToList();
                 foreach (var obj in result)
                 {
                     obj.userData = true;

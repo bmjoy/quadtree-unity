@@ -165,9 +165,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   IsMouseMoving: 0
-  MouseMoveWorldPos: {x: 1.0100217, y: -0.6978673, z: -26.368774}
+  MouseMoveWorldPos: {x: 1.0914841, y: 0.82284486, z: -5.329712}
   IsMouseLeftClick: 0
-  MouseLeftClickWorldPos: {x: 0.9263418, y: 0.44127384, z: -25.45105}
+  MouseLeftClickWorldPos: {x: 0.3704534, y: 0.3791599, z: -25.08368}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
