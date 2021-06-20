@@ -82,6 +82,7 @@ public class QuadTree
             var rect1 = new Rect(0, 0.5f, 0.5f, 0.5f);
             var rect2 = new Rect(0, 0, 0.5f, 0.5f);
             var rect3 = new Rect(0.5f, 0, 0.5f, 0.5f);
+            var halfSize = new Vector2(0.5f, 0.5f);
 
             var obj0 = new RectInfo();
             obj0.bounds = rect0;
@@ -106,6 +107,10 @@ public class QuadTree
             Test_Assert(root.children[1].objects.Contains(obj1) == true);
             Test_Assert(root.children[2].objects.Contains(obj2) == true);
             Test_Assert(root.children[3].objects.Contains(obj3) == true);
+            Test_Assert(root.children[0].bounds.size == halfSize);
+            Test_Assert(root.children[1].bounds.size == halfSize);
+            Test_Assert(root.children[2].bounds.size == halfSize);
+            Test_Assert(root.children[3].bounds.size == halfSize);
 
             var reslut0 = root.Query(rect0);
             Test_Assert(reslut0.Count == 1);
