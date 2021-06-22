@@ -164,10 +164,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82d90df3c84919a4d934a629916aaecd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  IsMouseMoving: 0
-  MouseMoveWorldPos: {x: 1.2326393, y: 0.6501748, z: -5.7285156}
-  IsMouseLeftClick: 0
-  MouseLeftClickWorldPos: {x: 0.48244417, y: 0.7194699, z: -5.7285156}
+  MouseMoveWorldPos: {x: 1.7006725, y: -0.4198671, z: -3.204834}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0

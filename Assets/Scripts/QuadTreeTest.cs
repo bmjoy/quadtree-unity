@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using System.Collections;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using Diagnostics = System.Diagnostics;
 using UnityEngine;
@@ -31,18 +31,10 @@ public static class GizmosExt
 }
 
 
-[DisallowMultipleComponent]
 [ExecuteInEditMode]
-public class QuadTreeTest : MonoBehaviour
+[DisallowMultipleComponent]
+public class QuadTreeTest : ListenUnityEditorSceneView
 {
-    public static Vector3 ScreenPositionToWorldPotion(Vector3 mousePosition)
-    {
-        Ray ray = Camera.current.ScreenPointToRay(new Vector3(mousePosition.x,
-            -mousePosition.y + Camera.current.pixelHeight));
-        Vector3 worldPos = ray.origin;
-        return worldPos;
-    }
-
     [Button]
     private void RunTestCase()
     {
@@ -50,147 +42,53 @@ public class QuadTreeTest : MonoBehaviour
         Debug.Log("TestOk");
     }
 
-    private void OnEnable()
+    public override void OnSceneGUI(SceneView sceneView)
     {
-        SceneView.duringSceneGui += OnSceneGUI;
+        checkMouse();
     }
-    private void OnDisable()
+    public void Update()
     {
-        SceneView.duringSceneGui -= OnSceneGUI;
-    }
-    public bool IsMouseMoving = false;
-    public Vector3 MouseMoveWorldPos;
-    public bool IsMouseLeftClick = false;
-    public Vector3 MouseLeftClickWorldPos;
-    private void OnSceneGUI(SceneView sceneView)
-    {
-        sceneView.Repaint();
-
-        IsMouseMoving = false;
-        IsMouseLeftClick = false;
-        var unityEvent = Event.current;
-
-        if (unityEvent.isMouse && unityEvent.type == EventType.MouseMove)
-        {
-            var worldPos = ScreenPositionToWorldPotion(unityEvent.mousePosition);
-            IsMouseMoving = true;
-            MouseMoveWorldPos = worldPos;
-            unityEvent.Use();
-        }
-
-        // https://docs.unity3d.com/ScriptReference/Event-button.html // unityEvent.button == 0 (Left Click)
-        if (unityEvent.isMouse && unityEvent.type == EventType.MouseDown && unityEvent.button == 0)
-        {
-            var worldPos = ScreenPositionToWorldPotion(unityEvent.mousePosition);
-            IsMouseLeftClick = true;
-            MouseLeftClickWorldPos = worldPos;
-            unityEvent.Use();
-        }
-
-        if (unityEvent.isKey && unityEvent.type == EventType.KeyUp && unityEvent.keyCode == KeyCode.Escape)
-        {
-            unityEvent.Use();
-        }
-        CheckMouse();
+        initQuadTree();
     }
 
-    void Update()
-    {
-        InitQuadTree();
-    }
-
+    #region  QuadTree Operate
     private QuadTree root;
-    private List<RectInfo> objs = new List<RectInfo>();
     private RectInfo hero;
-    private void InitQuadTree()
+    private List<RectInfo> objs = new List<RectInfo>();
+    private void initQuadTree()
     {
         if (root == null)
         {
             root = new QuadTree(new Rect(0, 0, 1, 1), 10, 4, 0);
             hero = new RectInfo();
             hero.rect = new Rect(0, 0, 0.1f, 0.1f);
+            objs.Clear();
         }
     }
-    private void CheckMouse()
+
+    private void checkMouse()
     {
-        if (IsMouseMoving && hero != null)
+        if (IsMouseMove && hero != null)
         {
             var pos = MouseMoveWorldPos;
             hero.rect.center = new Vector2(pos.x, pos.y);
         }
-        if (IsMouseLeftClick)
+        if (IsMouseClick)
         {
-            var pos = MouseLeftClickWorldPos;
+            var pos = MouseClickWorldPos;
             addObj(new Vector2(pos.x, pos.y));
         }
-        CheckQuery();
-    }
-
-    [ShowInInspector]
-    private int ReslutCount
-    {
-        get
+        if (IsMouseMove)
         {
-            var reslutCount = 0;
-            if (this.result != null)
-            {
-                reslutCount = this.result.Count;
-            }
-            return reslutCount;
+            checkQuery();
         }
     }
-    [ShowInInspector]
-    private int TotleCount
-    {
-        get
-        {
-            return objs.Count;
-        }
-    }
-    [ShowInInspector]
-    private string CheckPercent
-    {
-        get
-        {
-            var totleCount = TotleCount;
-            if (TotleCount != 0)
-            {
-                var percent = (float)ReslutCount / (float)totleCount;
-                percent = percent * 100;
-                return $"{percent:F1}%";
-            }
-            return "0%";
-        }
-    }
-    private List<RectInfo> result;
-    private void CheckQuery()
-    {
-        if (IsMouseMoving && hero != null && root != null)
-        {
-            foreach (var obj in objs)
-            {
-                obj.userData = false;
-            }
-            var result = root.Query(hero.rect);
-            if (result != null)
-            {
-                result = result.Distinct().ToList();
-                foreach (var obj in result)
-                {
-                    obj.userData = true;
-                }
-            }
-            this.result = result;
-        }
-    }
-
     private void addObj(Vector2 pos)
     {
         if (root == null)
         {
             return;
         }
-
         var obj = GizmosExt.RandomRectInfo();
         obj.rect.center = pos;
         if (root.Insert(obj))
@@ -200,8 +98,42 @@ public class QuadTreeTest : MonoBehaviour
             Debug.Log("addObj");
         }
     }
+    private List<RectInfo> queryResult;
+    private void checkQuery()
+    {
+        if (root == null || hero == null)
+        {
+            return;
+        }
+        foreach (var obj in objs)
+        {
+            obj.userData = false;
+        }
+        var result = root.Query(hero.rect);
+        if (result != null)
+        {
+            result = result.Distinct().ToList();
+            foreach (var obj in result)
+            {
+                obj.userData = true;
+            }
+        }
+        this.queryResult = result;
+    }
+    #endregion // QuadTree Operate
 
-    private void DrawQuadTree(QuadTree tree)
+    #region  OnDrawGizmos
+    private void OnDrawGizmos()
+    {
+        drawQuadTree();
+        drawObjects();
+        drawHero();
+    }
+    private void drawQuadTree()
+    {
+        drawQuadTreeImpl(root);
+    }
+    private void drawQuadTreeImpl(QuadTree tree)
     {
         if (tree == null)
         {
@@ -212,7 +144,7 @@ public class QuadTreeTest : MonoBehaviour
         {
             foreach (var item in tree.children)
             {
-                DrawQuadTree(item);
+                drawQuadTreeImpl(item);
             }
         }
         else
@@ -220,7 +152,7 @@ public class QuadTreeTest : MonoBehaviour
             GizmosExt.DrawRect(tree.rect);
         }
     }
-    private void DrawObjects()
+    private void drawObjects()
     {
         Gizmos.color = Color.white;
         foreach (var obj in objs)
@@ -240,35 +172,52 @@ public class QuadTreeTest : MonoBehaviour
             GizmosExt.DrawRect(obj.rect);
         }
     }
-    private void DrawHero(QuadTree tree, RectInfo hero)
+    private void drawHero()
     {
-        if (tree == null && hero == null)
+        if (root == null && hero == null)
         {
             return;
         }
-        if (QuadTree.RectOverlaps(tree.rect, hero.rect))
+        if (QuadTree.RectOverlaps(root.rect, hero.rect))
         {
             Gizmos.color = Color.green;
             GizmosExt.DrawRect(hero.rect);
         }
     }
+    #endregion // OnDrawGizmos
 
-    private void OnDrawGizmos()
+    #region Show Infos
+    [ShowInInspector]
+    private int checkCount
     {
-        DrawQuadTree(root);
-        DrawObjects();
-        DrawHero(root, hero);
-
-        if (!Application.isPlaying)
+        get { return this.queryResult != null ? this.queryResult.Count : 0; }
+    }
+    [ShowInInspector]
+    private int totleCount
+    {
+        get { return objs.Count; }
+    }
+    [ShowInInspector]
+    private string checkPercent
+    {
+        get
         {
-            return;
+            var totleCount = this.totleCount;
+            if (this.totleCount != 0)
+            {
+                var percent = (float)checkCount / (float)totleCount;
+                percent = percent * 100;
+                return $"{percent:F1}%";
+            }
+            return "0%";
         }
     }
+    #endregion // Show Infos
 
     [Button]
-    private void InsertBenchmark()
+    private void benchmark_Insert()
     {
-        Clear();
+        clearTree();
         var insertCount = 10000;
         var tmpObjs = new List<RectInfo>();
         {
@@ -294,15 +243,15 @@ public class QuadTreeTest : MonoBehaviour
                 }
             }
         }
-        stopwatch.Stop(); //  停止监视
+        stopwatch.Stop();
         var timespan = stopwatch.Elapsed;
-        double milliseconds = timespan.TotalMilliseconds;  //  总毫秒数
-        Debug.Log($"Insert10000 count = {count}");
-        Debug.Log($"Insert10000 time = {milliseconds} ms");
+        double milliseconds = timespan.TotalMilliseconds;
+        Debug.Log($"Insert 10000 count = {count}");
+        Debug.Log($"Insert 10000 time = {milliseconds} ms");
     }
 
     [Button]
-    private void Clear()
+    private void clearTree()
     {
         if (root != null)
         {
