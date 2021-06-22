@@ -190,6 +190,7 @@ public class QuadTree
 
 
     #region Insert
+    // 确保obj与本节点相交再插入
     public bool Insert(RectInfo obj)
     {
         if (RectOverlaps(this.rect, obj.rect))
@@ -214,37 +215,16 @@ public class QuadTree
             }
         }
     }
-    // 插入子节点意味着一定与本节点相交
+    // 插入子节点意味着obj一定与本节点相交
     // 1 0
     // 2 3
     private void insertToChildren(RectInfo obj)
     {
-        var objRect = obj.rect;
-
-        var nodeCenter = this.rect.center;
-        var objMin = objRect.min;
-        var objMax = objRect.max;
-
-        var xMaxOnRight = objMax.x > nodeCenter.x;
-        var xMinOnLeft = objMin.x < nodeCenter.x;
-        var yMaxOnTop = objMax.y > nodeCenter.y;
-        var yMinOnBottom = objMin.y < nodeCenter.y;
-
-        if (xMaxOnRight && yMaxOnTop)
+        var queryRect = obj.rect;
+        queryChildOverlap(queryRect);
+        foreach (var childIndex in childOverlapResult)
         {
-            this.children[0].insertImpl(obj);
-        }
-        if (xMinOnLeft && yMaxOnTop)
-        {
-            this.children[1].insertImpl(obj);
-        }
-        if (xMinOnLeft && yMinOnBottom)
-        {
-            this.children[2].insertImpl(obj);
-        }
-        if (xMaxOnRight && yMinOnBottom)
-        {
-            this.children[3].insertImpl(obj);
+            this.children[childIndex].insertImpl(obj);
         }
     }
     // 1 0
@@ -253,30 +233,27 @@ public class QuadTree
     {
         var nodeRect = this.rect;
         var nodeMin = nodeRect.min;
-        var nodeMax = nodeRect.max;
         var nodeCenter = nodeRect.center;
         var nodeSize = nodeRect.size / 2;
 
         this.children = new QuadTree[4];
         var childLevel = this.level + 1;
-        var topRight = new Rect(nodeCenter, nodeSize);
-        this.children[0] = new QuadTree(topRight, maxObjects, maxLevels, childLevel);
-
-        var topLeft = new Rect(new Vector2(nodeMin.x, nodeCenter.y), nodeSize);
-        this.children[1] = new QuadTree(topLeft, maxObjects, maxLevels, childLevel);
-
-        var bottomLeft = new Rect(nodeMin, nodeSize);
-        this.children[2] = new QuadTree(bottomLeft, maxObjects, maxLevels, childLevel);
-
-        var bottomRight = new Rect(new Vector2(nodeCenter.x, nodeMin.y), nodeSize);
-        this.children[3] = new QuadTree(bottomRight, maxObjects, maxLevels, childLevel);
+        {
+            var topRight = new Rect(nodeCenter, nodeSize);
+            this.children[0] = new QuadTree(topRight, maxObjects, maxLevels, childLevel);
+            var topLeft = new Rect(new Vector2(nodeMin.x, nodeCenter.y), nodeSize);
+            this.children[1] = new QuadTree(topLeft, maxObjects, maxLevels, childLevel);
+            var bottomLeft = new Rect(nodeMin, nodeSize);
+            this.children[2] = new QuadTree(bottomLeft, maxObjects, maxLevels, childLevel);
+            var bottomRight = new Rect(new Vector2(nodeCenter.x, nodeMin.y), nodeSize);
+            this.children[3] = new QuadTree(bottomRight, maxObjects, maxLevels, childLevel);
+        }
 
         for (int i = 0; i < this.children.Length; i++)
         {
             this.children[i].id = i;
             this.children[i].parent = this;
         }
-
         foreach (var obj in objects)
         {
             this.insertImpl(obj);
@@ -285,6 +262,42 @@ public class QuadTree
     }
     #endregion // Insert
 
+    #region Common
+    // 该函数调用前,queryRect一定是与本节点相交的
+    // 1 0
+    // 2 3
+    private List<int> childOverlapResult = new List<int>();
+    private List<int> queryChildOverlap(Rect queryRect)
+    {
+        childOverlapResult.Clear();
+        var nodeCenter = this.rect.center;
+        var objMin = queryRect.min;
+        var objMax = queryRect.max;
+
+        var xMaxOnRight = objMax.x > nodeCenter.x;
+        var xMinOnLeft = objMin.x < nodeCenter.x;
+        var yMaxOnTop = objMax.y > nodeCenter.y;
+        var yMinOnBottom = objMin.y < nodeCenter.y;
+
+        if (xMaxOnRight && yMaxOnTop)
+        {
+            childOverlapResult.Add(0);
+        }
+        if (xMinOnLeft && yMaxOnTop)
+        {
+            childOverlapResult.Add(1);
+        }
+        if (xMinOnLeft && yMinOnBottom)
+        {
+            childOverlapResult.Add(2);
+        }
+        if (xMaxOnRight && yMinOnBottom)
+        {
+            childOverlapResult.Add(3);
+        }
+        return childOverlapResult;
+    }
+    #endregion // Common
 
     #region Query
     public List<RectInfo> Query(Rect queryRect)
@@ -308,30 +321,10 @@ public class QuadTree
         }
         else
         {
-            var nodeCenter = this.rect.center;
-            var objMin = queryRect.min;
-            var objMax = queryRect.max;
-
-            var xMaxOnRight = objMax.x > nodeCenter.x;
-            var xMinOnLeft = objMin.x < nodeCenter.x;
-            var yMaxOnTop = objMax.y > nodeCenter.y;
-            var yMinOnBottom = objMin.y < nodeCenter.y;
-
-            if (xMaxOnRight && yMaxOnTop)
+            queryChildOverlap(queryRect);
+            foreach (var childIndex in childOverlapResult)
             {
-                this.children[0].queryImpl(queryRect, result);
-            }
-            if (xMinOnLeft && yMaxOnTop)
-            {
-                this.children[1].queryImpl(queryRect, result);
-            }
-            if (xMinOnLeft && yMinOnBottom)
-            {
-                this.children[2].queryImpl(queryRect, result);
-            }
-            if (xMaxOnRight && yMinOnBottom)
-            {
-                this.children[3].queryImpl(queryRect, result);
+                this.children[childIndex].queryImpl(queryRect, result);
             }
         }
     }
