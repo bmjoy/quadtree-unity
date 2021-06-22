@@ -221,10 +221,13 @@ public class QuadTree
     private void insertToChildren(RectInfo obj)
     {
         var queryRect = obj.rect;
-        queryChildOverlap(queryRect);
-        foreach (var childIndex in childOverlapResult)
+        var bitmap = queryChildOverlap(queryRect);
+        for (int i = 0; i < 4; i++)
         {
-            this.children[childIndex].insertImpl(obj);
+            if ((bitmap & (1 << i)) != 0)
+            {
+                this.children[i].insertImpl(obj);
+            }
         }
     }
     // 1 0
@@ -266,10 +269,9 @@ public class QuadTree
     // 该函数调用前,queryRect一定是与本节点相交的
     // 1 0
     // 2 3
-    private List<int> childOverlapResult = new List<int>();
-    private List<int> queryChildOverlap(Rect queryRect)
+    private int queryChildOverlap(Rect queryRect)
     {
-        childOverlapResult.Clear();
+        var result = 0;
         var nodeCenter = this.rect.center;
         var objMin = queryRect.min;
         var objMax = queryRect.max;
@@ -281,21 +283,21 @@ public class QuadTree
 
         if (xMaxOnRight && yMaxOnTop)
         {
-            childOverlapResult.Add(0);
+            result |= 1 << 0;
         }
         if (xMinOnLeft && yMaxOnTop)
         {
-            childOverlapResult.Add(1);
+            result |= 1 << 1;
         }
         if (xMinOnLeft && yMinOnBottom)
         {
-            childOverlapResult.Add(2);
+            result |= 1 << 2;
         }
         if (xMaxOnRight && yMinOnBottom)
         {
-            childOverlapResult.Add(3);
+            result |= 1 << 3;
         }
-        return childOverlapResult;
+        return result;
     }
     #endregion // Common
 
@@ -321,10 +323,13 @@ public class QuadTree
         }
         else
         {
-            queryChildOverlap(queryRect);
-            foreach (var childIndex in childOverlapResult)
+            var bitmap = queryChildOverlap(queryRect);
+            for (int i = 0; i < 4; i++)
             {
-                this.children[childIndex].queryImpl(queryRect, result);
+                if ((bitmap & (1 << i)) != 0)
+                {
+                    this.children[i].queryImpl(queryRect, result);
+                }
             }
         }
     }
