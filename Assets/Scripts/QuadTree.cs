@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using Rect = UnityEngine.Rect;
@@ -53,7 +52,7 @@ public class QuadTree
     {
         var root = new QuadTree(new Rect(0, 0, 1, 1), 2, 4, 0);
         var obj = new RectInfo();
-        obj.bounds = new Rect(0, 0, 0.5f, 0.5f);
+        obj.rect = new Rect(0, 0, 0.5f, 0.5f);
 
         {
             root.Insert(obj);
@@ -72,7 +71,7 @@ public class QuadTree
             root.Clear();
             Test_Assert(root.objects.Count == 0);
             Test_Assert(root.children == null);
-            obj.bounds = new Rect(-1, -1, 1, 1);
+            obj.rect = new Rect(-1, -1, 1, 1);
             root.Insert(obj);
             Test_Assert(root.objects.Count == 0);
         }
@@ -85,13 +84,13 @@ public class QuadTree
             var halfSize = new Vector2(0.5f, 0.5f);
 
             var obj0 = new RectInfo();
-            obj0.bounds = rect0;
+            obj0.rect = rect0;
             var obj1 = new RectInfo();
-            obj1.bounds = rect1;
+            obj1.rect = rect1;
             var obj2 = new RectInfo();
-            obj2.bounds = rect2;
+            obj2.rect = rect2;
             var obj3 = new RectInfo();
-            obj3.bounds = rect3;
+            obj3.rect = rect3;
             root.Insert(obj0);
             root.Insert(obj1);
             root.Insert(obj2);
@@ -107,10 +106,10 @@ public class QuadTree
             Test_Assert(root.children[1].objects.Contains(obj1) == true);
             Test_Assert(root.children[2].objects.Contains(obj2) == true);
             Test_Assert(root.children[3].objects.Contains(obj3) == true);
-            Test_Assert(root.children[0].bounds.size == halfSize);
-            Test_Assert(root.children[1].bounds.size == halfSize);
-            Test_Assert(root.children[2].bounds.size == halfSize);
-            Test_Assert(root.children[3].bounds.size == halfSize);
+            Test_Assert(root.children[0].rect.size == halfSize);
+            Test_Assert(root.children[1].rect.size == halfSize);
+            Test_Assert(root.children[2].rect.size == halfSize);
+            Test_Assert(root.children[3].rect.size == halfSize);
 
             var reslut0 = root.Query(rect0);
             Test_Assert(reslut0.Count == 1);
@@ -147,9 +146,10 @@ public class QuadTree
     #endregion // TEST
 
 
+    #region Util
     public class RectInfo
     {
-        public Rect bounds;
+        public Rect rect;
         public object userData;
     }
 
@@ -165,33 +165,40 @@ public class QuadTree
         }
         return false;
     }
+    #endregion // Util
 
+
+    #region Constructor
     private uint maxObjects;
     private uint maxLevels;
     private uint level;
-    public Rect bounds;
-    public int Id;
-    public QuadTree Parent;
-    public QuadTree(Rect bounds, uint maxObjects, uint maxLevels, uint level)
+
+    public int id;
+    public Rect rect;
+    public QuadTree parent;
+    public QuadTree[] children;
+    public List<RectInfo> objects;
+    public QuadTree(Rect rect, uint maxObjects, uint maxLevels, uint level)
     {
-        this.bounds = bounds;
+        this.rect = rect;
         this.maxObjects = maxObjects;
         this.maxLevels = maxLevels;
         this.level = level;
+        objects = new List<RectInfo>();
     }
+    #endregion // Constructor
 
-    public bool Insert(RectInfo rect)
+
+    #region Insert
+    public bool Insert(RectInfo obj)
     {
-        if (RectOverlaps(this.bounds, rect.bounds))
+        if (RectOverlaps(this.rect, obj.rect))
         {
-            insertImpl(rect);
+            insertImpl(obj);
             return true;
         }
         return false;
     }
-
-    public QuadTree[] children;
-    private List<RectInfo> objects = new List<RectInfo>();
     private void insertImpl(RectInfo obj)
     {
         if (this.children != null)
@@ -207,21 +214,21 @@ public class QuadTree
             }
         }
     }
-
     // 插入子节点意味着一定与本节点相交
     // 1 0
     // 2 3
     private void insertToChildren(RectInfo obj)
     {
-        var center = this.bounds.center;
-        var objRect = obj.bounds;
+        var objRect = obj.rect;
+
+        var nodeCenter = this.rect.center;
         var objMin = objRect.min;
         var objMax = objRect.max;
 
-        var xMaxOnRight = objMax.x > center.x;
-        var xMinOnLeft = objMin.x < center.x;
-        var yMaxOnTop = objMax.y > center.y;
-        var yMinOnBottom = objMin.y < center.y;
+        var xMaxOnRight = objMax.x > nodeCenter.x;
+        var xMinOnLeft = objMin.x < nodeCenter.x;
+        var yMaxOnTop = objMax.y > nodeCenter.y;
+        var yMinOnBottom = objMin.y < nodeCenter.y;
 
         if (xMaxOnRight && yMaxOnTop)
         {
@@ -240,85 +247,34 @@ public class QuadTree
             this.children[3].insertImpl(obj);
         }
     }
-
-    public List<RectInfo> Query(Rect objRect)
-    {
-        if (RectOverlaps(this.bounds, objRect))
-        {
-            var result = new List<RectInfo>();
-            queryImpl(objRect, result);
-            return result;
-        }
-        return null;
-    }
-
-    // 查询意味着一定与本节点相交
-    // 1 0
-    // 2 3
-    private void queryImpl(Rect objRect, List<RectInfo> result)
-    {
-        if (this.children == null)
-        {
-            result.AddRange(this.objects);
-        }
-        else
-        {
-            var center = this.bounds.center;
-            var objMin = objRect.min;
-            var objMax = objRect.max;
-
-            var xMaxOnRight = objMax.x > center.x;
-            var xMinOnLeft = objMin.x < center.x;
-            var yMaxOnTop = objMax.y > center.y;
-            var yMinOnBottom = objMin.y < center.y;
-
-            if (xMaxOnRight && yMaxOnTop)
-            {
-                this.children[0].queryImpl(objRect, result);
-            }
-            if (xMinOnLeft && yMaxOnTop)
-            {
-                this.children[1].queryImpl(objRect, result);
-            }
-            if (xMinOnLeft && yMinOnBottom)
-            {
-                this.children[2].queryImpl(objRect, result);
-            }
-            if (xMaxOnRight && yMinOnBottom)
-            {
-                this.children[3].queryImpl(objRect, result);
-            }
-        }
-    }
-
     // 1 0
     // 2 3
     private void split()
     {
-        var rect = this.bounds;
-        var min = rect.min;
-        var max = rect.max;
-        var center = rect.center;
-        var size = rect.size / 2;
+        var nodeRect = this.rect;
+        var nodeMin = nodeRect.min;
+        var nodeMax = nodeRect.max;
+        var nodeCenter = nodeRect.center;
+        var nodeSize = nodeRect.size / 2;
 
         this.children = new QuadTree[4];
+        var childLevel = this.level + 1;
+        var topRight = new Rect(nodeCenter, nodeSize);
+        this.children[0] = new QuadTree(topRight, maxObjects, maxLevels, childLevel);
 
-        var topRight = new Rect(center, size);
-        this.children[0] = new QuadTree(topRight, maxObjects, maxLevels, level + 1);
+        var topLeft = new Rect(new Vector2(nodeMin.x, nodeCenter.y), nodeSize);
+        this.children[1] = new QuadTree(topLeft, maxObjects, maxLevels, childLevel);
 
-        var topLeft = new Rect(new Vector2(min.x, center.y), size);
-        this.children[1] = new QuadTree(topLeft, maxObjects, maxLevels, level + 1);
+        var bottomLeft = new Rect(nodeMin, nodeSize);
+        this.children[2] = new QuadTree(bottomLeft, maxObjects, maxLevels, childLevel);
 
-        var bottomLeft = new Rect(min, size);
-        this.children[2] = new QuadTree(bottomLeft, maxObjects, maxLevels, level + 1);
-
-        var bottomRight = new Rect(new Vector2(center.x, min.y), size);
-        this.children[3] = new QuadTree(bottomRight, maxObjects, maxLevels, level + 1);
+        var bottomRight = new Rect(new Vector2(nodeCenter.x, nodeMin.y), nodeSize);
+        this.children[3] = new QuadTree(bottomRight, maxObjects, maxLevels, childLevel);
 
         for (int i = 0; i < this.children.Length; i++)
         {
-            this.children[i].Id = i;
-            this.children[i].Parent = this;
+            this.children[i].id = i;
+            this.children[i].parent = this;
         }
 
         foreach (var obj in objects)
@@ -327,7 +283,62 @@ public class QuadTree
         }
         objects.Clear();
     }
+    #endregion // Insert
 
+
+    #region Query
+    public List<RectInfo> Query(Rect queryRect)
+    {
+        if (RectOverlaps(this.rect, queryRect))
+        {
+            var result = new List<RectInfo>();
+            queryImpl(queryRect, result);
+            return result;
+        }
+        return null;
+    }
+    // 查询意味着一定与本节点相交
+    // 1 0
+    // 2 3
+    private void queryImpl(Rect queryRect, List<RectInfo> result)
+    {
+        if (this.children == null)
+        {
+            result.AddRange(this.objects);
+        }
+        else
+        {
+            var nodeCenter = this.rect.center;
+            var objMin = queryRect.min;
+            var objMax = queryRect.max;
+
+            var xMaxOnRight = objMax.x > nodeCenter.x;
+            var xMinOnLeft = objMin.x < nodeCenter.x;
+            var yMaxOnTop = objMax.y > nodeCenter.y;
+            var yMinOnBottom = objMin.y < nodeCenter.y;
+
+            if (xMaxOnRight && yMaxOnTop)
+            {
+                this.children[0].queryImpl(queryRect, result);
+            }
+            if (xMinOnLeft && yMaxOnTop)
+            {
+                this.children[1].queryImpl(queryRect, result);
+            }
+            if (xMinOnLeft && yMinOnBottom)
+            {
+                this.children[2].queryImpl(queryRect, result);
+            }
+            if (xMaxOnRight && yMinOnBottom)
+            {
+                this.children[3].queryImpl(queryRect, result);
+            }
+        }
+    }
+    #endregion // Query
+
+
+    #region Helper
     public void Clear()
     {
         objects.Clear();
@@ -343,29 +354,28 @@ public class QuadTree
 
     private static Stack<QuadTree> stack = new Stack<QuadTree>(16);
     private static StringBuilder sb = new StringBuilder(16);
-
     public string GetPath()
     {
         var parent = this;
         while (parent != null)
         {
             stack.Push(parent);
-            parent = parent.Parent;
+            parent = parent.parent;
         }
 
         if (stack.Count > 0)
         {
-            sb.Append(stack.Pop().Id);
+            sb.Append(stack.Pop().id);
         }
 
         while (stack.Count > 0)
         {
             sb.Append('-');
-            sb.Append(stack.Pop().Id);
+            sb.Append(stack.Pop().id);
         }
         var result = sb.ToString();
         sb.Clear();
         return result;
     }
-
-}// class
+    #endregion // Helper
+} // class

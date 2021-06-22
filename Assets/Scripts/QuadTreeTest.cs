@@ -25,7 +25,7 @@ public static class GizmosExt
         var y = Random.Range(0f, 1f);
         var w = Random.Range(0.005f, 0.08f);
         var h = Random.Range(0.005f, 0.08f);
-        rectInfo.bounds = new Rect(x, y, w, h);
+        rectInfo.rect = new Rect(x, y, w, h);
         return rectInfo;
     }
 }
@@ -108,7 +108,7 @@ public class QuadTreeTest : MonoBehaviour
         {
             root = new QuadTree(new Rect(0, 0, 1, 1), 10, 4, 0);
             hero = new RectInfo();
-            hero.bounds = new Rect(0, 0, 0.1f, 0.1f);
+            hero.rect = new Rect(0, 0, 0.1f, 0.1f);
         }
     }
     private void CheckMouse()
@@ -116,7 +116,7 @@ public class QuadTreeTest : MonoBehaviour
         if (IsMouseMoving && hero != null)
         {
             var pos = MouseMoveWorldPos;
-            hero.bounds.center = new Vector2(pos.x, pos.y);
+            hero.rect.center = new Vector2(pos.x, pos.y);
         }
         if (IsMouseLeftClick)
         {
@@ -171,7 +171,7 @@ public class QuadTreeTest : MonoBehaviour
             {
                 obj.userData = false;
             }
-            var result = root.Query(hero.bounds);
+            var result = root.Query(hero.rect);
             if (result != null)
             {
                 result = result.Distinct().ToList();
@@ -192,11 +192,11 @@ public class QuadTreeTest : MonoBehaviour
         }
 
         var obj = GizmosExt.RandomRectInfo();
-        obj.bounds.center = pos;
+        obj.rect.center = pos;
         if (root.Insert(obj))
         {
             objs.Add(obj);
-            Debug.Log(obj.bounds);
+            Debug.Log(obj.rect);
             Debug.Log("addObj");
         }
     }
@@ -217,7 +217,7 @@ public class QuadTreeTest : MonoBehaviour
         }
         else
         {
-            GizmosExt.DrawRect(tree.bounds);
+            GizmosExt.DrawRect(tree.rect);
         }
     }
     private void DrawObjects()
@@ -237,7 +237,7 @@ public class QuadTreeTest : MonoBehaviour
                     Gizmos.color = Color.white;
                 }
             }
-            GizmosExt.DrawRect(obj.bounds);
+            GizmosExt.DrawRect(obj.rect);
         }
     }
     private void DrawHero(QuadTree tree, RectInfo hero)
@@ -246,10 +246,10 @@ public class QuadTreeTest : MonoBehaviour
         {
             return;
         }
-        if (QuadTree.RectOverlaps(tree.bounds, hero.bounds))
+        if (QuadTree.RectOverlaps(tree.rect, hero.rect))
         {
             Gizmos.color = Color.green;
-            GizmosExt.DrawRect(hero.bounds);
+            GizmosExt.DrawRect(hero.rect);
         }
     }
 
