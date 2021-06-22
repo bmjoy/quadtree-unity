@@ -7,6 +7,7 @@ using UnityEditor;
 using Random = UnityEngine.Random;
 using Sirenix.OdinInspector;
 using RectInfo = QuadTree.RectInfo;
+using Rect = MyRect;
 
 public static class GizmosExt
 {
@@ -25,7 +26,7 @@ public static class GizmosExt
         var y = Random.Range(0f, 1f);
         var w = Random.Range(0.005f, 0.08f);
         var h = Random.Range(0.005f, 0.08f);
-        rectInfo.rect = new Rect(x, y, w, h);
+        rectInfo.rect = new Rect(x - w / 2, y - h / 2, w, h);
         return rectInfo;
     }
 }
@@ -59,7 +60,9 @@ public class QuadTreeTest : ListenUnityEditorSceneView
     {
         if (root == null)
         {
-            root = new QuadTree(new Rect(0, 0, 1, 1), 10, 4, 0);
+            var max_objects = 10u;
+            var max_levels = 4u;
+            root = new QuadTree(new Rect(0, 0, 1, 1), max_objects, max_levels, 0);
             hero = new RectInfo();
             hero.rect = new Rect(0, 0, 0.1f, 0.1f);
             objs.Clear();
@@ -71,7 +74,10 @@ public class QuadTreeTest : ListenUnityEditorSceneView
         if (IsMouseMove && hero != null)
         {
             var pos = MouseMoveWorldPos;
-            hero.rect.center = new Vector2(pos.x, pos.y);
+            {
+                hero.rect.x = pos.x - hero.rect.width / 2;
+                hero.rect.y = pos.y - hero.rect.height / 2;
+            }
         }
         if (IsMouseClick)
         {
@@ -90,7 +96,10 @@ public class QuadTreeTest : ListenUnityEditorSceneView
             return;
         }
         var obj = GizmosExt.RandomRectInfo();
-        obj.rect.center = pos;
+        {
+            obj.rect.x = pos.x - obj.rect.width / 2;
+            obj.rect.y = pos.y - obj.rect.height / 2;
+        }
         if (root.Insert(obj))
         {
             objs.Add(obj);
@@ -125,8 +134,8 @@ public class QuadTreeTest : ListenUnityEditorSceneView
     #region  OnDrawGizmos
     private void OnDrawGizmos()
     {
-        drawQuadTree();
         drawObjects();
+        drawQuadTree();
         drawHero();
     }
     private void drawQuadTree()
@@ -215,10 +224,9 @@ public class QuadTreeTest : ListenUnityEditorSceneView
     #endregion // Show Infos
 
     [Button]
-    private void benchmark_Insert()
+    private void benchmark_Insert(int insertCount = 10000)
     {
         clearTree();
-        var insertCount = 10000;
         var tmpObjs = new List<RectInfo>();
         {
             for (int i = 0; i < insertCount; i++)
@@ -227,7 +235,10 @@ public class QuadTreeTest : ListenUnityEditorSceneView
                 tmpObjs.Add(obj);
             }
         }
-
+        benchmark_InsertImpl(insertCount, tmpObjs);
+    }
+    private void benchmark_InsertImpl(int insertCount, List<RectInfo> tmpObjs)
+    {
         // https://blog.csdn.net/suifcd/article/details/44175027
         var stopwatch = new Diagnostics.Stopwatch();
         stopwatch.Start(); //  开始监视代码运行时间
@@ -246,8 +257,8 @@ public class QuadTreeTest : ListenUnityEditorSceneView
         stopwatch.Stop();
         var timespan = stopwatch.Elapsed;
         double milliseconds = timespan.TotalMilliseconds;
-        Debug.Log($"Insert 10000 count = {count}");
-        Debug.Log($"Insert 10000 time = {milliseconds} ms");
+        Debug.Log($"Insert count = {count}");
+        Debug.Log($"Insert time = {milliseconds} ms");
     }
 
     [Button]

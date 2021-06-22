@@ -1,8 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Rect = UnityEngine.Rect;
 using Vector2 = UnityEngine.Vector2;
+using Rect = MyRect;
+using UnityEngine;
+// 通过Profiler分析Unity的Rect的各种getter有很大的性能问题
+
+public struct MyRect
+{
+    public float x;
+    public float y;
+    public float width;
+    public float height;
+    public MyRect(float x, float y, float width, float height)
+    {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public Vector2 size
+    {
+        get
+        {
+            return new Vector2(width, height);
+        }
+    }
+    public Vector2 min
+    {
+        get
+        {
+            return new Vector2(x, y);
+        }
+    }
+    public Vector2 max
+    {
+        get
+        {
+            return new Vector2(x + width, y + height);
+        }
+    }
+    public float xMin
+    {
+        get
+        {
+            return x;
+        }
+    }
+    public float yMin
+    {
+        get
+        {
+            return y;
+        }
+    }
+    public float xMax
+    {
+        get
+        {
+            return x + width;
+        }
+    }
+    public float yMax
+    {
+        get
+        {
+            return y + height;
+        }
+    }
+    public override string ToString()
+    {
+        return $"x={x},y={y},w={width},h={height}";
+    }
+}
+
+
 
 /*
 四叉树：
@@ -155,11 +228,20 @@ public class QuadTree
 
     public static bool RectOverlaps(Rect a, Rect b)
     {
-        var aCenter = a.center;
-        var bCenter = b.center;
-        var xDis = Math.Abs(aCenter.x - bCenter.x);
-        var yDis = Math.Abs(aCenter.y - bCenter.y);
-        if (xDis < (a.width + b.width) / 2 && yDis < (a.height + b.height) / 2)
+        var aHalfW = a.width / 2;
+        var aHalfH = a.height / 2;
+        var bHalfW = b.width / 2;
+        var bHalfH = b.height / 2;
+
+        var aCenterX = a.x + aHalfW;
+        var aCenterY = a.y + aHalfH;
+        var bCenterX = b.x + bHalfW;
+        var bCenterY = b.y + bHalfH;
+
+        var xAbsDis = aCenterX > bCenterX ? aCenterX - bCenterX : bCenterX - aCenterX;
+        var yAbsDis = aCenterY > bCenterY ? aCenterY - bCenterY : bCenterY - aCenterY;
+
+        if (xAbsDis < (aHalfW + bHalfW) && yAbsDis < (aHalfH + bHalfH))
         {
             return true;
         }
@@ -198,7 +280,11 @@ public class QuadTree
             insertImpl(obj);
             return true;
         }
-        return false;
+        else
+        {
+            // Debug.Log(obj.rect);
+            return false;
+        }
     }
     private void insertImpl(RectInfo obj)
     {
@@ -235,20 +321,24 @@ public class QuadTree
     private void split()
     {
         var nodeRect = this.rect;
-        var nodeMin = nodeRect.min;
-        var nodeCenter = nodeRect.center;
-        var nodeSize = nodeRect.size / 2;
+
+        var nodeMinX = nodeRect.x;
+        var nodeMinY = nodeRect.y;
+        var nodeHalfW = nodeRect.width / 2;
+        var nodeHalfH = nodeRect.height / 2;
+        var nodeCenterX = nodeRect.x + nodeRect.width / 2;
+        var nodeCenterY = nodeRect.y + nodeRect.height / 2;
 
         this.children = new QuadTree[4];
         var childLevel = this.level + 1;
         {
-            var topRight = new Rect(nodeCenter, nodeSize);
+            var topRight = new Rect(nodeCenterX, nodeCenterY, nodeHalfW, nodeHalfH);
             this.children[0] = new QuadTree(topRight, maxObjects, maxLevels, childLevel);
-            var topLeft = new Rect(new Vector2(nodeMin.x, nodeCenter.y), nodeSize);
+            var topLeft = new Rect(nodeMinX, nodeCenterY, nodeHalfW, nodeHalfH);
             this.children[1] = new QuadTree(topLeft, maxObjects, maxLevels, childLevel);
-            var bottomLeft = new Rect(nodeMin, nodeSize);
+            var bottomLeft = new Rect(nodeMinX, nodeMinY, nodeHalfW, nodeHalfH);
             this.children[2] = new QuadTree(bottomLeft, maxObjects, maxLevels, childLevel);
-            var bottomRight = new Rect(new Vector2(nodeCenter.x, nodeMin.y), nodeSize);
+            var bottomRight = new Rect(nodeCenterX, nodeMinY, nodeHalfW, nodeHalfH);
             this.children[3] = new QuadTree(bottomRight, maxObjects, maxLevels, childLevel);
         }
 
@@ -272,14 +362,16 @@ public class QuadTree
     private int queryChildOverlap(Rect queryRect)
     {
         var result = 0;
-        var nodeCenter = this.rect.center;
-        var objMin = queryRect.min;
-        var objMax = queryRect.max;
 
-        var xMaxOnRight = objMax.x > nodeCenter.x;
-        var xMinOnLeft = objMin.x < nodeCenter.x;
-        var yMaxOnTop = objMax.y > nodeCenter.y;
-        var yMinOnBottom = objMin.y < nodeCenter.y;
+        var nodeRect = this.rect;
+
+        var nodeCenterX = nodeRect.x + nodeRect.width / 2;
+        var nodeCenterY = nodeRect.y + nodeRect.height / 2;
+
+        var xMaxOnRight = (queryRect.x + queryRect.width) > nodeCenterX;
+        var xMinOnLeft = queryRect.x < nodeCenterX;
+        var yMaxOnTop = (queryRect.y + queryRect.height) > nodeCenterY;
+        var yMinOnBottom = queryRect.y < nodeCenterY;
 
         if (xMaxOnRight && yMaxOnTop)
         {
