@@ -22,13 +22,17 @@ public static class GizmosExt
     public static RectInfo RandomRectInfo()
     {
         var rectInfo = new RectInfo();
-        var x = Random.Range(0f, 1f);
-        var y = Random.Range(0f, 1f);
+
         var w = Random.Range(0.005f, 0.08f);
         var h = Random.Range(0.005f, 0.08f);
+        var halfW = w / 2;
+        var halfH = h / 2;
+        var x = Random.Range(halfW, 1 - halfW);
+        var y = Random.Range(halfH, 1 - halfH);
+
         var vx = Random.Range(-0.05f, 0.05f);
         var vy = Random.Range(-0.05f, 0.05f);
-        rectInfo.rect = new Rect(x - w / 2, y - h / 2, w, h);
+        rectInfo.rect = new Rect(x - halfW, y - halfH, w, h);
         var userData = new UserDataBase();
         userData.vx = vx;
         userData.vy = vy;

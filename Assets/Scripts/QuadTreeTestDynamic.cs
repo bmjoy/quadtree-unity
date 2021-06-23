@@ -55,10 +55,10 @@ public class QuadTreeTestDynamic : QuadTreeTestBase
             obj.rect.x += userData.vx * deltaTime;
             obj.rect.y += userData.vy * deltaTime;
 
-            if (obj.rect.x > 1) obj.rect.x = 0;
-            if (obj.rect.x < 0) obj.rect.x = 1;
-            if (obj.rect.y > 1) obj.rect.y = 0;
-            if (obj.rect.y < 0) obj.rect.y = 1;
+            if (obj.rect.xMax > 1) obj.rect.x = 0;
+            if (obj.rect.x < 0) obj.rect.x = 1 - obj.rect.width;
+            if (obj.rect.yMax > 1) obj.rect.y = 0;
+            if (obj.rect.y < 0) obj.rect.y = 1 - obj.rect.height;
 
             root.Insert(obj);
         }
