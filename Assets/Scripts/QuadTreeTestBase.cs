@@ -31,10 +31,9 @@ public static class GizmosExt
     }
 }
 
-
 [ExecuteInEditMode]
 [DisallowMultipleComponent]
-public class QuadTreeTest : ListenUnityEditorSceneView
+public class QuadTreeTestBase : ListenUnityEditorSceneView
 {
     [Button]
     private void RunTestCase()
@@ -53,10 +52,10 @@ public class QuadTreeTest : ListenUnityEditorSceneView
     }
 
     #region  QuadTree Operate
-    private QuadTree root;
-    private RectInfo hero;
-    private List<RectInfo> objs = new List<RectInfo>();
-    private void initQuadTree()
+    protected QuadTree root;
+    protected RectInfo hero;
+    protected List<RectInfo> objs = new List<RectInfo>();
+    protected virtual void initQuadTree()
     {
         if (root == null)
         {
@@ -69,27 +68,11 @@ public class QuadTreeTest : ListenUnityEditorSceneView
         }
     }
 
-    private void checkMouse()
+    protected virtual void checkMouse()
     {
-        if (IsMouseMove && hero != null)
-        {
-            var pos = MouseMoveWorldPos;
-            {
-                hero.rect.x = pos.x - hero.rect.width / 2;
-                hero.rect.y = pos.y - hero.rect.height / 2;
-            }
-        }
-        if (IsMouseClick)
-        {
-            var pos = MouseClickWorldPos;
-            addObj(new Vector2(pos.x, pos.y));
-        }
-        if (IsMouseMove)
-        {
-            checkQuery();
-        }
     }
-    private void addObj(Vector2 pos)
+
+    protected virtual void addObj(Vector2 pos)
     {
         if (root == null)
         {
@@ -107,8 +90,8 @@ public class QuadTreeTest : ListenUnityEditorSceneView
             Debug.Log("addObj");
         }
     }
-    private List<RectInfo> queryResult;
-    private void checkQuery()
+    protected List<RectInfo> queryResult;
+    protected virtual void checkQuery()
     {
         if (root == null || hero == null)
         {
@@ -132,17 +115,17 @@ public class QuadTreeTest : ListenUnityEditorSceneView
     #endregion // QuadTree Operate
 
     #region  OnDrawGizmos
-    private void OnDrawGizmos()
+    protected virtual void OnDrawGizmos()
     {
         drawObjects();
         drawQuadTree();
         drawHero();
     }
-    private void drawQuadTree()
+    protected virtual void drawQuadTree()
     {
         drawQuadTreeImpl(root);
     }
-    private void drawQuadTreeImpl(QuadTree tree)
+    protected virtual void drawQuadTreeImpl(QuadTree tree)
     {
         if (tree == null)
         {
@@ -161,7 +144,7 @@ public class QuadTreeTest : ListenUnityEditorSceneView
             GizmosExt.DrawRect(tree.rect);
         }
     }
-    private void drawObjects()
+    protected virtual void drawObjects()
     {
         Gizmos.color = Color.white;
         foreach (var obj in objs)
@@ -181,7 +164,7 @@ public class QuadTreeTest : ListenUnityEditorSceneView
             GizmosExt.DrawRect(obj.rect);
         }
     }
-    private void drawHero()
+    protected virtual void drawHero()
     {
         if (root == null && hero == null)
         {

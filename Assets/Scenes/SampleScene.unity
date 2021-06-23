@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 421721083}
   - component: {fileID: 421721084}
   m_Layer: 0
-  m_Name: QuadTreeTest
+  m_Name: QuadTreeTestStatic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -161,10 +161,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 421721082}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 82d90df3c84919a4d934a629916aaecd, type: 3}
+  m_Script: {fileID: 11500000, guid: b835d1dbfa6e07e489252b09a3fe25b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MouseMoveWorldPos: {x: 0.5890106, y: 0.5391015, z: -3.72229}
+  MouseMoveWorldPos: {x: 1.6518639, y: 0.28880456, z: -4.3703613}
 --- !u!1 &519420028
 GameObject:
   m_ObjectHideFlags: 0
