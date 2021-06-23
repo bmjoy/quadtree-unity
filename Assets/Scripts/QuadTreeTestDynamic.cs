@@ -13,6 +13,57 @@ using Rect = MyRect;
 [DisallowMultipleComponent]
 public class QuadTreeTestDynamic : QuadTreeTestBase
 {
+    protected override void initQuadTree()
+    {
+        if (root == null)
+        {
+            base.initQuadTree();
+            createObjects();
+        }
+    }
+
+    [Button]
+    private void createObjects(int count = 200)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var rectInfo = GizmosExt.RandomRectInfo();
+            if (root.Insert(rectInfo))
+            {
+                objs.Add(rectInfo);
+            }
+        }
+    }
+
+    public override void OnUpdate(float deltaTime)
+    {
+        base.OnUpdate(deltaTime);
+        updateRectInfoMove(deltaTime);
+    }
+
+    protected virtual void updateRectInfoMove(float deltaTime)
+    {
+        if (root == null)
+        {
+            return;
+        }
+        root.Clear();
+        for (var i = 0; i < objs.Count; i++)
+        {
+            var obj = objs[i];
+            var userData = obj.userData as UserDataBase;
+            obj.rect.x += userData.vx * deltaTime;
+            obj.rect.y += userData.vy * deltaTime;
+
+            if (obj.rect.x > 1) obj.rect.x = 0;
+            if (obj.rect.x < 0) obj.rect.x = 1;
+            if (obj.rect.y > 1) obj.rect.y = 0;
+            if (obj.rect.y < 0) obj.rect.y = 1;
+
+            root.Insert(obj);
+        }
+    }
+
     protected override void checkMouse()
     {
         if (IsMouseMove && hero != null)
@@ -23,14 +74,6 @@ public class QuadTreeTestDynamic : QuadTreeTestBase
                 hero.rect.y = pos.y - hero.rect.height / 2;
             }
         }
-        if (IsMouseClick)
-        {
-            var pos = MouseClickWorldPos;
-            addObj(new Vector2(pos.x, pos.y));
-        }
-        if (IsMouseMove)
-        {
-            checkQuery();
-        }
+        checkQuery();
     }
 }
