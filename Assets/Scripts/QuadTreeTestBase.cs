@@ -26,9 +26,22 @@ public static class GizmosExt
         var y = Random.Range(0f, 1f);
         var w = Random.Range(0.005f, 0.08f);
         var h = Random.Range(0.005f, 0.08f);
+        var vx = Random.Range(-0.05f, 0.05f);
+        var vy = Random.Range(-0.05f, 0.05f);
         rectInfo.rect = new Rect(x - w / 2, y - h / 2, w, h);
+        var userData = new UserDataBase();
+        userData.vx = vx;
+        userData.vy = vy;
+        rectInfo.userData = userData;
         return rectInfo;
     }
+}
+
+public class UserDataBase
+{
+    public bool check;
+    public float vx;
+    public float vy;
 }
 
 [ExecuteInEditMode]
@@ -45,8 +58,37 @@ public class QuadTreeTestBase : ListenUnityEditorSceneView
     public override void OnSceneGUI(SceneView sceneView)
     {
         checkMouse();
+
+        if (!Application.isPlaying)
+        {
+            this.editorUpdate();
+        }
     }
     public void Update()
+    {
+        var deltaTime = Time.deltaTime;
+        this.OnUpdate(deltaTime);
+    }
+    private long editorlastTicks;
+    private void editorUpdate()
+    {
+        var startTicks = System.DateTime.Now.Ticks;
+
+        if (editorlastTicks == 0)
+        {
+            editorlastTicks = System.DateTime.Now.Ticks;
+        }
+        else
+        {
+            var currTicks = System.DateTime.Now.Ticks;
+            var deltaTicks = currTicks - editorlastTicks;
+            editorlastTicks = currTicks;
+            var elapsedSpan = new TimeSpan(deltaTicks);
+            var deltaTime = (float)elapsedSpan.TotalSeconds;
+            this.OnUpdate(deltaTime);
+        }
+    }
+    public virtual void OnUpdate(float deltaTime)
     {
         initQuadTree();
     }
@@ -99,7 +141,7 @@ public class QuadTreeTestBase : ListenUnityEditorSceneView
         }
         foreach (var obj in objs)
         {
-            obj.userData = false;
+            ((UserDataBase)obj.userData).check = false;
         }
         var result = root.Query(hero.rect);
         if (result != null)
@@ -107,7 +149,7 @@ public class QuadTreeTestBase : ListenUnityEditorSceneView
             result = result.Distinct().ToList();
             foreach (var obj in result)
             {
-                obj.userData = true;
+                ((UserDataBase)obj.userData).check = true;
             }
         }
         this.queryResult = result;
@@ -146,20 +188,16 @@ public class QuadTreeTestBase : ListenUnityEditorSceneView
     }
     protected virtual void drawObjects()
     {
-        Gizmos.color = Color.white;
         foreach (var obj in objs)
         {
-            if (obj.userData != null)
+            var userData = (UserDataBase)obj.userData;
+            if (userData.check)
             {
-                var collid = (bool)obj.userData;
-                if (collid)
-                {
-                    Gizmos.color = Color.yellow;
-                }
-                else
-                {
-                    Gizmos.color = Color.white;
-                }
+                Gizmos.color = Color.yellow;
+            }
+            else
+            {
+                Gizmos.color = Color.white;
             }
             GizmosExt.DrawRect(obj.rect);
         }
