@@ -89,6 +89,10 @@ public class QuadTreeTestBase : ListenUnityEditorSceneView
             editorlastTicks = currTicks;
             var elapsedSpan = new TimeSpan(deltaTicks);
             var deltaTime = (float)elapsedSpan.TotalSeconds;
+            if (deltaTime > 1f / 60f)
+            {
+                deltaTime = 1f / 60f;
+            }
             this.OnUpdate(deltaTime);
         }
     }

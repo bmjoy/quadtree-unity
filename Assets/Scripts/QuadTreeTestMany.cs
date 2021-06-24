@@ -41,6 +41,20 @@ public class QuadTreeTestMany : QuadTreeTestBase
         updateRectInfoMove(deltaTime);
     }
 
+    [ShowInInspector, ReadOnly]
+    private int checkTotal;
+    [ShowInInspector]
+    private int checkAvg
+    {
+        get
+        {
+            if (objs.Count > 0)
+            {
+                return checkTotal / objs.Count;
+            }
+            return 0;
+        }
+    }
     protected virtual void updateRectInfoMove(float deltaTime)
     {
         if (root == null)
@@ -53,23 +67,16 @@ public class QuadTreeTestMany : QuadTreeTestBase
             var obj = objs[i];
             var userData = obj.userData as UserDataBase;
             userData.check = false;
-            obj.rect.x += userData.vx * deltaTime;
-            obj.rect.y += userData.vy * deltaTime;
-
-            if (obj.rect.xMax > 1) userData.vx = -Math.Abs(userData.vx);
-            if (obj.rect.x < 0) userData.vx = Math.Abs(userData.vx);
-            if (obj.rect.yMax > 1) userData.vy = -Math.Abs(userData.vy);
-            if (obj.rect.y < 0) userData.vy = Math.Abs(userData.vy);
-
             root.Insert(obj);
         }
-
+        checkTotal = 0;
         for (var i = 0; i < objs.Count; i++)
         {
             var obj = objs[i];
             var candidates = root.Query(obj.rect);
             if (candidates != null)
             {
+                checkTotal += candidates.Count;
                 foreach (var otherObj in candidates)
                 {
                     if (obj == otherObj)
@@ -79,6 +86,19 @@ public class QuadTreeTestMany : QuadTreeTestBase
                     cauculateCollision(obj, otherObj);
                 }
             }
+        }
+
+        for (var i = 0; i < objs.Count; i++)
+        {
+            var obj = objs[i];
+            var userData = obj.userData as UserDataBase;
+            obj.rect.x += userData.vx * deltaTime;
+            obj.rect.y += userData.vy * deltaTime;
+
+            if (obj.rect.xMax > 1) userData.vx = -Math.Abs(userData.vx);
+            if (obj.rect.x < 0) userData.vx = Math.Abs(userData.vx);
+            if (obj.rect.yMax > 1) userData.vy = -Math.Abs(userData.vy);
+            if (obj.rect.y < 0) userData.vy = Math.Abs(userData.vy);
         }
     }
 
@@ -145,11 +165,6 @@ public class QuadTreeTestMany : QuadTreeTestBase
             aUserData.vy *= -1;
         }
         aRectInfo.rect = a;
-
-        if (aRectInfo.rect.xMax > 1) aUserData.vx = -Math.Abs(aUserData.vx);
-        if (aRectInfo.rect.x < 0) aUserData.vx = Math.Abs(aUserData.vx);
-        if (aRectInfo.rect.yMax > 1) aUserData.vy = -Math.Abs(aUserData.vy);
-        if (aRectInfo.rect.y < 0) aUserData.vy = Math.Abs(aUserData.vy);
     }
 
     protected override void checkMouse()
